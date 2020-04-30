@@ -13,16 +13,13 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final List<Transaction> _transaction = [];
+  bool _showChart = false;
 
-
-  List<Transaction> get _recentTransaction{
-
-    return _transaction.where( (tr) {
-       return tr.date.isAfter(DateTime.now().subtract(Duration(days: 7)));
+  List<Transaction> get _recentTransaction {
+    return _transaction.where((tr) {
+      return tr.date.isAfter(DateTime.now().subtract(Duration(days: 7)));
     }).toList();
   }
-
-
 
   _addTransaction(String title, double value, DateTime date) {
     final newTransaction = Transaction(
@@ -39,11 +36,12 @@ class _HomePageState extends State<HomePage> {
     Navigator.of(context).pop();
   }
 
-  _deleteTrasaction(String id){
+  _deleteTrasaction(String id) {
     setState(() {
       _transaction.removeWhere((tr) => tr.id == id);
     });
   }
+
   _openTransactioFormModal(BuildContext context) {
     showModalBottomSheet(
         context: context,
@@ -56,19 +54,51 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    bool isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
+    final appBar = AppBar(
+      title: Text("Despesas pessoais"),
+      actions: <Widget>[
+        if (isLandscape)
+          IconButton(
+            icon: Icon(_showChart ? Icons.list : Icons.show_chart),
+            onPressed: () {
+              setState(() {
+                _showChart = !_showChart;
+              });
+            },
+          ),
+        IconButton(
+          icon: Icon(Icons.add),
+          onPressed: () => _openTransactioFormModal(context),
+        ),
+      ],
+    );
+
+    final avaliableHeight = MediaQuery.of(context).size.height -
+        appBar.preferredSize.height -
+        MediaQuery.of(context).padding.top;
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Despesas pessoais"),
-        actions: <Widget>[
-          IconButton(icon: Icon(Icons.add), onPressed: () => _openTransactioFormModal(context)),
-        ],
-      ),
+      appBar: appBar,
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-          Chart(recentTransaction: _recentTransaction),
-            TransactionList(listTransaction: _transaction, remove: _deleteTrasaction),
+            if (_showChart || !isLandscape)
+              Container(
+                height: avaliableHeight * (isLandscape ? 0.7 : 0.3),
+                child: Chart(recentTransaction: _recentTransaction),
+              ),
+            if (!_showChart || !isLandscape)
+              Container(
+                height: avaliableHeight * 0.7,
+                child: TransactionList(
+                  listTransaction: _transaction,
+                  remove: _deleteTrasaction,
+                ),
+              ),
           ],
         ),
       ),
